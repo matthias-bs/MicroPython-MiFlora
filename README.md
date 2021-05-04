@@ -20,3 +20,9 @@ The MAC addresses can be found as follows:
 The code was tested with MicroPython V1.15
 on ESP32 (build esp32-20210418-v1.15.bin)
 with Mi Flora Firmware V3.2.2
+
+MicroPython-MiFlora is based on the following code and documentation:
+- https://github.com/ChrisScheffler/miflora/wiki/The-Basics
+- https://github.com/basnijholt/miflora/blob/master/miflora/miflora_poller.py
+- https://docs.micropython.org/en/latest/library/ubluetooth.html
+- https://github.com/micropython/micropython/tree/master/examples/bluetooth
