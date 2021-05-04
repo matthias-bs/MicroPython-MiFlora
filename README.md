@@ -16,8 +16,9 @@ The sensors' BLE MAC addresses must be supplied by the user
 in the variable *miflora_sensors*.
 
 The MAC addresses can be found as follows:
-- Linux: $ sudo hcitool lescan
-- Android App "nRF Connect"
+- Linux: `$ sudo hcitool lescan`
+- Android: [nRF Connect for Mobile](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp)
+- Windows 10: [Bluetooth LE Explorer](https://www.microsoft.com/en-us/p/bluetooth-le-explorer/9n0ztkf1qd98)
 
 The code was tested with MicroPython V1.15
 on ESP32 (build esp32-20210418-v1.15.bin)
