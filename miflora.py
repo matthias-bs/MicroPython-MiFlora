@@ -26,7 +26,7 @@
 # - moisture
 # - conductivity
 #
-# The the sensors' BLE MAC addresses must be supplied by the user
+# The sensors' BLE MAC addresses must be supplied by the user
 # in <miflora_sensors> (see below).
 #
 # The code was tested with MicroPython V1.15
