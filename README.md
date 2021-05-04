@@ -2,7 +2,7 @@
 ![MiFlora_screenshot](https://user-images.githubusercontent.com/83612361/117039563-3591f180-ad09-11eb-9b4b-d4b518d33d1e.png)
 # MicroPython-MiFlora
 
-MicroPython library for Xiaomi Mi Flora (aka. flower care) BLE plant sensors
+MicroPython library for Xiaomi Mi Flora (aka. flower care) BLE (Bluetooth Low Energy) plant sensors
 
 The library reads the following data from the device:
 - firmware version
@@ -14,6 +14,15 @@ The library reads the following data from the device:
 
 The sensors' BLE MAC addresses must be supplied by the user
 in the variable *miflora_sensors*.
+
+Example:
+```
+# MAC addresses of two Mi Flora sensors
+miflora_sensors = [ 
+    bytes(b'\xC4\x7C\x8D\x66\xA5\x3D'),
+    bytes(b'\xC4\x7C\x8D\x66\xA4\xD5')
+]
+```
 
 The MAC addresses can be found as follows:
 - Linux: `$ sudo hcitool lescan`
