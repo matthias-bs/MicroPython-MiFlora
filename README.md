@@ -2,7 +2,9 @@
 ![MiFlora_screenshot](https://user-images.githubusercontent.com/83612361/117039563-3591f180-ad09-11eb-9b4b-d4b518d33d1e.png)
 # MicroPython-MiFlora
 
-MicroPython library for Xiaomi Mi Flora (aka. flower care) BLE (Bluetooth Low Energy) plant sensors
+MicroPython library for Xiaomi Mi Flora (aka. flower care) BLE¹ plant sensors
+
+¹ BLE: Bluetooth Low Energy
 
 The library reads the following data from the device:
 - firmware version
