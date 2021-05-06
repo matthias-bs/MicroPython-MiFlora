@@ -58,6 +58,7 @@
 # 20210504 Implemented AUTO_MODE
 #          fixed several bugs and cleaned up code
 #          initial release on GitHub
+# 20210506 Minor changes to improve integration as module
 #
 # ToDo:
 # 
@@ -116,7 +117,7 @@ DISCOVER_CHARACTERISTICS  = False
 #     -> _IRQ_PERIPHERAL_CONNECT
 #  3. _IRQ_PERIPHERAL_CONNECT
 #     if _DISCOVER_SERVICES: -> _IRQ_GATTC_SERVICE_RESULT
-#     else _S_READ_FIRMWARE_DONE
+#     else S_READ_FIRMWARE_DONE
 #  4. _IRQ_GATTC_SERVICE_RESULT
 #     if completed: -> _IRQ_GATTC_SERVICE_DONE
 #  5. _IRQ_GATTC_SERVICE_DONE
@@ -124,15 +125,15 @@ DISCOVER_CHARACTERISTICS  = False
 #  6. _IRQ_GATTC_CHARACTERISTIC_RESULT
 #     if completed: -> _IRQ_GATTC_CHARACTERISTIC_DONE
 #  7. _IRQ_GATTC_CHARACTERISTIC_DONE
-#     -> _S_READ_FIRMWARE_DONE
-#  8. _S_READ_FIRMWARE_DONE
-#     -> _S_MODE_CHANGE_DONE
-#  9. _S_MODE_CHANGE_DONE
-#     -> _S_READ_SENSOR_DONE
-# 10. _S_READ_SENSOR_DONE
+#     -> S_READ_FIRMWARE_DONE
+#  8. S_READ_FIRMWARE_DONE
+#     -> S_MODE_CHANGE_DONE
+#  9. S_MODE_CHANGE_DONE
+#     -> S_READ_SENSOR_DONE
+# 10. S_READ_SENSOR_DONE
 #
 # The application can start the state machine, perform other tasks, eventually wait until
-# the state _S_READ_SENSOR_DONE is reached (or a timeout occurred) and finally disconnect
+# the state S_READ_SENSOR_DONE is reached (or a timeout occurred) and finally disconnect
 # from the peripheral (MiFlora.disconnect()).
 AUTO_MODE = 1
 
@@ -182,8 +183,8 @@ _ADV_NONCONN_IND = const(0x03)
 _ADV_SCAN_RSP    = const(0x04)
 
 # Address types (cf. https://docs.micropython.org/en/latest/library/ubluetooth.html)
-_ADDR_TYPE_PUBLIC = const(0x00)
-_ADDR_TYPE_RANDOM = const(0x01)
+ADDR_TYPE_PUBLIC = const(0x00)
+ADDR_TYPE_RANDOM = const(0x01)
 
 # Miflora Service / Characteristics UUIDs
 # (ROOT_SERVICE could be used for discovery)
@@ -202,13 +203,13 @@ _DATA_MODE_CHANGE            = bytes([0xA0, 0x1F])
 _HANDLE_READ_SENSOR_DATA     = 0x35
 
 # States of state machine
-_S_INIT                = const(0)
-_S_SCAN_DONE           = const(1)
-_S_SERVICE_DONE        = const(2)
-_S_CHARACTERISTIC_DONE = const(3)
-_S_READ_FIRMWARE_DONE  = const(4)
-_S_MODE_CHANGE_DONE    = const(5)
-_S_READ_SENSOR_DONE    = const(6)
+S_INIT                = const(0)
+S_SCAN_DONE           = const(1)
+S_SERVICE_DONE        = const(2)
+S_CHARACTERISTIC_DONE = const(3)
+S_READ_FIRMWARE_DONE  = const(4)
+S_MODE_CHANGE_DONE    = const(5)
+S_READ_SENSOR_DONE    = const(6)
 
        
 class MiFlora:
@@ -260,7 +261,7 @@ class MiFlora:
 
     def _reset(self):
         # Init public members.
-        self.state       = _S_INIT
+        self.state       = S_INIT
         self.search_addr = None
         self.addr_found  = False
         self.name        = None
@@ -325,7 +326,7 @@ class MiFlora:
             self._debug("bt irq - scan result", 2)
             # A single scan result.
             addr_type, addr, adv_type, rssi, adv_data = data
-            _addr_type = 'Public' if (addr_type == _ADDR_TYPE_PUBLIC) else 'Random' 
+            _addr_type = 'Public' if (addr_type == ADDR_TYPE_PUBLIC) else 'Random' 
             _addr = bytes(addr)
             _addr = binascii.hexlify(_addr)
             if adv_type == _ADV_IND:
@@ -411,7 +412,7 @@ class MiFlora:
         elif event == _IRQ_GATTC_SERVICE_DONE:
             # Service query complete.
             self._debug("bt irq - gattc service done", 2)
-            self.state = _S_SERVICE_DONE
+            self.state = S_SERVICE_DONE
             if self._serv_done_callback:
                 self._serv_done_callback()
                 self._serv_done_callback = None
@@ -440,7 +441,7 @@ class MiFlora:
         elif event == _IRQ_GATTC_CHARACTERISTIC_DONE:
             # Characteristic query complete.
             self._debug("bt irq - gattc characteristic done", 2)
-            self.state = _S_CHARACTERISTIC_DONE
+            self.state = S_CHARACTERISTIC_DONE
             if self._char_done_callback:
                 self._char_done_callback()
                 self._char_done_callback = None
@@ -461,7 +462,7 @@ class MiFlora:
             # Read completed (no-op).
             self._debug("bt irq - gattc read done", 2)
             conn_handle, value_handle, status = data
-            if AUTO_MODE and self.state == _S_READ_FIRMWARE_DONE:
+            if AUTO_MODE and self.state == S_READ_FIRMWARE_DONE:
                 self.mode_change(self.mode_change_done)
 
         elif event == _IRQ_GATTC_WRITE_DONE:
@@ -475,7 +476,7 @@ class MiFlora:
                 if self._write_callback:
                     self._write_callback()
                     self._write_callback = None
-                if AUTO_MODE and self.state == _S_MODE_CHANGE_DONE:
+                if AUTO_MODE and self.state == S_MODE_CHANGE_DONE:
                     self.read_sensor(callback=self.read_sensor_done)
 
         elif event == _IRQ_GATTC_NOTIFY:
@@ -700,7 +701,7 @@ class MiFlora:
             name (string):   device name
         """
         self._debug("scan_done()", 1)
-        self.state = _S_SCAN_DONE
+        self.state = S_SCAN_DONE
 
     def read_firmware_done(self, data):
         """
@@ -715,14 +716,14 @@ class MiFlora:
         data = bytes(data)
         self.battery = data[0]
         self.version = str(data[2:7], 'UTF-8')
-        self.state = _S_READ_FIRMWARE_DONE
+        self.state = S_READ_FIRMWARE_DONE
 
     def mode_change_done(self):
         """
         Callback for mode_change().
         """        
         self._debug("mode_change_done()", 1)
-        self.state = _S_MODE_CHANGE_DONE
+        self.state = S_MODE_CHANGE_DONE
 
     def read_sensor_done(self, data):
         """
@@ -747,7 +748,7 @@ class MiFlora:
         self.light = light[0]
         self.moist = moist[0]
         self.cond  = cond[0]
-        self.state = _S_READ_SENSOR_DONE
+        self.state = S_READ_SENSOR_DONE
 
     """
     Status query methods
@@ -873,88 +874,88 @@ def wait_for_connection(obj, status, timeout_ms):
 ###############################################################################
 def demo_man():
     ble = ubluetooth.BLE()
-    miflora = MiFlora(ble)
+    mf = MiFlora(ble)
     print("demo_man()")
     
     while True:
         for addr in miflora_sensors:
-            miflora.search_addr    = addr
-            miflora.search_service = _GENERIC_ACCESS_SERVICE_UUID
+            mf.search_addr    = addr
+            mf.search_service = _GENERIC_ACCESS_SERVICE_UUID
 
             if SCAN_DEVICES:
                 print("Searching for device with MAC address {}...".format(binascii.hexlify(addr)))
                 
-                miflora.scan(callback=miflora.scan_done)
+                mf.scan(callback=mf.scan_done)
                 
-                if miflora.wait_for(_S_SCAN_DONE, 2500):
+                if mf.wait_for(S_SCAN_DONE, 2500):
                     print("Scan done.")
                 else:
                     print("Scan timeout!")
                     continue
                     
-                if miflora.addr_found == False:
+                if mf.addr_found == False:
                     print("Sensor not found!")
                     continue
                 
-                print("Sensor '{}' found.".format(miflora.name))
-                print("RSSI: {}dbB".format(miflora.rssi))
+                print("Sensor '{}' found.".format(mf.name))
+                print("RSSI: {}dbB".format(mf.rssi))
         
             print("Trying to connect to device with MAC address {}...".format(binascii.hexlify(addr)))
-            rc = miflora.gap_connect(_ADDR_TYPE_PUBLIC, addr)
+            rc = mf.gap_connect(ADDR_TYPE_PUBLIC, addr)
             print("gap_connect() = ", rc)
             
-            if miflora.wait_for_connection(True, 3000):
+            if mf.wait_for_connection(True, 3000):
                 print("Connected")
             else:
                 print("Connection failed!")
                 continue
             
             if DISCOVER_SERVICES:
-                miflora.discover_services()
+                mf.discover_services()
                 
-                if miflora.wait_for(_S_SERVICE_DONE, 2500):
-                    print(miflora.services)
+                if mf.wait_for(S_SERVICE_DONE, 2500):
+                    print(mf.services)
                 else:
                     print("discover_services failed!")
                 
             if DISCOVER_CHARACTERISTICS:
-                miflora.discover_characteristics(1, 9)
+                mf.discover_characteristics(1, 9)
                 
-                if miflora.wait_for(_S_CHARACTERISTIC_DONE, 2500):
-                    print(miflora.characteristics)
+                if mf.wait_for(S_CHARACTERISTIC_DONE, 2500):
+                    print(mf.characteristics)
                 else:
                     print("discover_characteristics failed!")
             
-            miflora.read_firmware(callback=miflora.read_firmware_done)
+            mf.read_firmware(callback=mf.read_firmware_done)
         
-            if miflora.wait_for(_S_READ_FIRMWARE_DONE, 2000):
-                print("Battery Level: {}%".format(miflora.battery))
-                print("Version: {}".format(miflora.version))
+            if mf.wait_for(S_READ_FIRMWARE_DONE, 2000):
+                print("Battery Level: {}%".format(mf.battery))
+                print("Version: {}".format(mf.version))
         
-                miflora.mode_change(miflora.mode_change_done)
+                mf.mode_change(mf.mode_change_done)
         
-                if not miflora.wait_for(_S_MODE_CHANGE_DONE, 2000):
+                if not mf.wait_for(S_MODE_CHANGE_DONE, 2000):
                     print("Mode change failed!")
                     break;
             
-                miflora.read_sensor(callback=miflora.read_sensor_done)
+                mf.read_sensor(callback=mf.read_sensor_done)
                 
-                if miflora.wait_for(_S_READ_SENSOR_DONE, 2000):
+                if mf.wait_for(S_READ_SENSOR_DONE, 2000):
                      print("Temperature: {}°C Light: {}lx Moisture: {}% Conductivity: {}µS/cm".format(
-                        miflora.temp, miflora.light, miflora.moist, miflora.cond)
+                        mf.temp, mf.light, mf.moist, mf.cond)
                     )
                 else:
                     print("Reading sensor data failed!")
             else:
                 print("Reading sensor firmware version and battery status failed!")
 
-            miflora.disconnect()
+            mf.disconnect()
             
-            if miflora.wait_for_connection(False, 10000):
+            if mf.wait_for_connection(False, 10000):
                 print("Disconnected")
             else:
                 print("Disconnect failed!")
-                miflora._reset()
+                mf._reset()
 
         print("Sleeping {} seconds...".format(_T_CYCLE))
         time.sleep(_T_CYCLE)
@@ -970,23 +971,23 @@ def demo_man():
 ###############################################################################
 def demo_auto():
     ble = ubluetooth.BLE()
-    miflora = MiFlora(ble)
+    mf = MiFlora(ble)
     print("demo_auto()")
 
     while True:
         
         for addr in miflora_sensors:
-            miflora.search_addr    = addr
-            miflora.search_service = _GENERIC_ACCESS_SERVICE_UUID
+            mf.search_addr    = addr
+            mf.search_service = _GENERIC_ACCESS_SERVICE_UUID
 
             if SCAN_DEVICES:
                 print("Searching for device with MAC address {}...".format(binascii.hexlify(addr)))
                 
-                miflora.scan(callback=miflora.scan_done)
+                mf.scan(callback=mf.scan_done)
             else:
                 print("Trying to connect to device with MAC address {}...".format(binascii.hexlify(addr)))
                 
-                rc = miflora.gap_connect(_ADDR_TYPE_PUBLIC, addr)
+                rc = mf.gap_connect(ADDR_TYPE_PUBLIC, addr)
                 print("gap_connect() = ", rc)
                 
             ########################################
@@ -995,25 +996,25 @@ def demo_auto():
             
             # The time required depends on the number of visible devices and
             # the selected service discovery/characteristics discovery options.
-            if miflora.wait_for(_S_READ_SENSOR_DONE, 20000):
+            if mf.wait_for(S_READ_SENSOR_DONE, 20000):
                 if SCAN_DEVICES:
-                    print("Sensor '{}' found.".format(miflora.name))
-                    print("RSSI: {}dbB".format(miflora.rssi))
-                print("Battery Level: {}%".format(miflora.battery))
-                print("Version: {}".format(miflora.version))
+                    print("Sensor '{}' found.".format(mf.name))
+                    print("RSSI: {}dbB".format(mf.rssi))
+                print("Battery Level: {}%".format(mf.battery))
+                print("Version: {}".format(mf.version))
                 print("Temperature: {}°C Light: {}lx Moisture: {}% Conductivity: {}µS/cm".format(
-                    miflora.temp, miflora.light, miflora.moist, miflora.cond)
+                    mf.temp, mf.light, mf.moist, mf.cond)
                 )
             else:
                 print("Reading sensor data failed (timeout)!")
 
-            miflora.disconnect()
+            mf.disconnect()
             
-            if miflora.wait_for_connection(False, 10000):
+            if mf.wait_for_connection(False, 10000):
                 print("Disconnected")
             else:
                 print("Disconnect failed (timeout)!")
-                miflora._reset()
+                mf._reset()
 
         print("Sleeping {} seconds...".format(_T_CYCLE))
         time.sleep(_T_CYCLE)
