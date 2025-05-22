@@ -1,0 +1,8 @@
+{
+  "urls": [
+    ["miflora.py", "github:matthias-bs/MicroPython-MiFlora/miflora.py"],
+    ["ble_advertising.py", "github:matthias-bs/MicroPython-MiFlora/ble_advertising.py"]
+  ],
+  "version": "1.0.0",
+  "deps": []
+}
